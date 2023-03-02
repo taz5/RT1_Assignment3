@@ -141,12 +141,6 @@ def goalsetto_action_client(des_pos_x, des_pos_y):
     """
     client.send_goal(goal,goal_status)
 
-def my_callback(event):
-    print ("Time exceeded" + str(event.current_real))
-    print("Failed to reach target in 60 seconds\n")
-    rospy.set_param('active',0)
-    
-
 def main():
 
     """
@@ -202,7 +196,6 @@ def main():
             if flag == 1:
                 print("Moving towards desired goal\n")
                 goalsetto_action_client(desired_position_x,desired_position_y)
-                rospy.Timer(rospy.Duration(60), my_callback)
                 flag = 0
                 
                 
