@@ -25,7 +25,7 @@ cd RT1_Assignment3
 mkdir src
 catkin_make
 ```
-**Remember to source your workspace. You can do it either by using the .bashrc file or just source it within the terminal itself. The best practice it to source it in the bashrc file.**
+**Remember to source your workspace. You can do it either by using the .bashrc file or just source it within the terminal itself. The best practice is to source it in the bashrc file.**
 
 To carry out this assignment, the following packages are required:
 
