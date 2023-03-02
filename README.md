@@ -1,4 +1,5 @@
-# INTRODUCTION
+# RT1 Assignment 3
+## INTRODUCTION
 
 The final assignment is focused on developing a software architecture for the control of the robot in the environment. The software will rely on the move_base and mapping packages for localizing the robot and plan the motion.
 
@@ -10,7 +11,7 @@ The architecture requests an input from the User, and lets the robot execute one
 
 All the nodes created in this assignment were made in python.
 
-## INITIAL SETUP BEFORE STARTING TO CODE
+### INITIAL SETUP BEFORE STARTING TO CODE
 
 The steps to be carried prior to creating the nodes would be as follows:
 
@@ -64,6 +65,11 @@ This launch file contains parameters and nodes.
 <node pkg="final_assignment" type="behaviour_3.py" name="behaviour_3" required="true" launch-prefix="xterm -bg black -fg green -e"/>
 </launch>
 ```
+The other two nodes came with the package. They are as follows:
+
+1. **simulation_gmapping**: This launch file adds the description of the robot to the ROS parameter server, launches Gazebo and Rviz amongst other nodes and generates the robot in the simulation.
+2. **Move_base**: Sets the rosparam described in the yaml file located in the param folder and launches the move_base node.
+
 **final.launch**
 ```bash
 <?xml version="1.0"?>
@@ -95,3 +101,57 @@ I have also used the **move_base** package as it provides an implementation of a
 
 Also, I have imported the **tf** package as it lets the user keep track of multiple coordinate frames over time. tf maintains the relationship between coordinate frames in a tree structure buffered in time, and lets the user transform points, vectors, etc between any two coordinate frames at any desired point in time.
 
+### THE NODES
+#### NODE 1: user_interface
+![user_interface](Images/userinterface.png)
+
+The user_interface takes input commands from the user. The user gets to choose amongst 3 behaviours mentioned earlier. So, the user_interface node is capable of switching between nodes by setting the ros parameter. The value of *active* is updated whenever the user chooses a behaviour and that would run the specific node associated with it.
+
+#### NODE 2: behaviour_1
+![behaviour_1](Images/behaviour1.png)
+
+This node focuses on the making the robot drive autonomously. It uses the MoveBaseAction. The move_base node provies an implementation og the SimpleActionServer, that takes in goals containing geometry_msgs/PoseStamped messages. There is a possibility of having a communication with the move_base node over ROS directly, but the recommended way to send goals to move_base only if one would care about tracking their status is by using SimpleActionClient. The functions defined here are as follows:
+
+1. clbk_odom -> It is responsible to get the current position of the robot in teh environment.
+2. goal_status -> That tells us what the progress of the goal is. There are different states to it but we focused only when the state was 3 as that would define that the goal was achieved successfully by the action server.
+3. goalsetto_action_client -> That sends the desired x and y coordinates of the desired position to the client.
+4. main -> Where the initialization of the node takes place and the it loops, updates the variables including the position and behaviour of the robot. 
+
+#### NODE 3 and 4: behaviour_2 and behaviour_3
+![behaviour_2](Images/behaviour2.png) ![behaviour_3](Images/behaviour3.png)
+
+Both these nodes make use of the fact the robot is controlled using the keyboard. In order to do be able to use the keyboard, one would have to install it:
+```bash
+sudo apt-get install ros-noetic-teleop-twist-keyboard
+```
+Teleop-twist-keyboard is a generic Keyboard Teleop for ROS. For Node 3 it is used when the value of active is changed based on teh user input. This behaviour is completely manual and would allow the user to navigate across the map based on the controls given as instructions when the terminal loads.
+![teleop_twist_keyboard](Images/teleop-twist-keyboard.png)
+There is hardly any difference between Node 3 and 4 except for the fact that node 4 uses a callback function where information about obstacles are constantly sent to the robot making sure that when it is within certain distance from the obstacle it stops. Also to make it more interesting, pop function was used. Ideally if not mentioned in the pop function, the last element of the dictionary gets eliminated. But here using the pop function, I have ensured that based on the location of the obstacle relative to the robot, certain commands get disabled just so that the user cannot drive into the obstacle. 
+
+## Simulation
+
+If all the steps have been followed until now, then the last remaining thing to do is to perform the simulation. The following commands need to be inserted:
+```bash
+# After writing all the nodes, go to the beginning of the workspace
+cd ./path/to/beginning/of/final_assignment/folder
+# As a habit I use killall -9 roscore and then killall -9 rosmaster so I can start fresh
+killall -9 roscore
+killall -9 rosmaster
+catkin_make
+roscore &
+rospack profile # Just to see packages
+roslaunch final_assignment final.launch
+```
+![rviz](Images/RVIZ.png) ![gazebo](Images/map_gazebo.png)
+This would open Rviz which is visualizer where you can put obstacles and see what the robot sees or see how the laser sensor works. Once Rviz opens, almost simultaneously gazebo opens. Gazebo is the official simulator for ROS. This is where once can see what exactly the robot is doing in the environment. Because of the launch file final,4 terminals showing the 4 nodes will open and then user can give the input commands.
+
+While all nodes are running, one can have a look at the way the nodes and topics communicate with each other by using the following command on a separate terminal:
+```bash
+rosrun rqt_graph rqt_graph
+```
+It will show the following graphs:
+**Nodes Only**
+![rqt_graph_nodes_only](Images/nodes_only.png)
+
+**Nodes and Topics**
+![rqt_graph_nodes_and_topics](Images/nodes&topics.png)
