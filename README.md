@@ -294,3 +294,7 @@ if __name__ == '__main__':
    function.
    Also we need to create a dictionary which will be a copy of the moveBindings given at the beginning of the teleop py file.
 ```
+## Video
+
+Below is a gif demonstrating my work
+![GIF](https://github.com/taz5/RT1_Assignment3/blob/main/Images/demo.gif)
