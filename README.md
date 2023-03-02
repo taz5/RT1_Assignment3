@@ -296,5 +296,7 @@ if __name__ == '__main__':
 ```
 ## Video
 
-Below is a gif demonstrating my work
+Below is a gif demonstrating my work!
+
+
 ![GIF](https://github.com/taz5/RT1_Assignment3/blob/main/Images/demo.gif)
