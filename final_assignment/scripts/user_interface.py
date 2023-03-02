@@ -35,7 +35,7 @@ def MODE():
         # behaviour 1 reset's the robot's state
         rospy.set_param('active',0)
         print("Behaviour Activated: Behaviour 1 a.k.a autonomous\n")
-        active = rospy.get_param("/active")
+        active_ = rospy.get_param("/active")
         """
         Now we can follow the same code that we used while performing the exercises in class
         with respect to inserting new position and reaching it. This make the robot move
