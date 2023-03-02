@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 This particular node is responsible for making the robot drive autonomously.
 I will be using actionlib in order to perform this part as there are advantages to using
@@ -10,7 +11,7 @@ Actions are useful when a response may take a significant length of time.
 # I first have to import all the libraries that we will be necessary.
 
 import rospy
-import std_srvs.srv import *
+from std_srvs.srv import *
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf import transformations
@@ -21,6 +22,10 @@ from geometry_msgs.msg import Twist, Point
 """
 Before making the necessary function for this node, I will initialize variable to be used in
 this node.
+"""
+msg = """
+You have activated the autonomous mode of the robot! This node will run as soon as you put
+the x and y coordinates in the user interface.
 """
 """
 For making the robot reach the goal, I will be using an action client MoveBaseGoal() as the
@@ -38,9 +43,17 @@ active_ = 0
 
 # Necessary Function definitions
 
+def clbk_odom(msg):
+    # The callback function will get the present position of the robot in the environment.
+    global position_  
+    
+    #position
+    position_ = msg.pose.pose.position
+
 def goal_status(term_state,result):
     
     global flag_goal
+    global client
     
     """
     I have taken this part from the ros documentation of the actionlib_msgs/GoalStatus Message
@@ -66,36 +79,36 @@ def goal_status(term_state,result):
     condition.
     """
     
-    if status == 0:
+    if term_state == 0:
         print("Goal yet to be processed!\n")
         return
-    if status == 1:
+    if term_state == 1:
         print("Goal being processed!\n")
         return
-    if status == 2:
+    if term_state == 2:
         print("Goal received a cancel request after it started executing!\n")
         return
-    if status == 3:
+    if term_state == 3:
         print("Goal was achieved successfully!\n")
         # In this case flag_goal = True
         flag_goal = True
         return
-    if status == 4:
+    if term_state == 4:
         print("Goal was aborted!\n")
         return
-    if status == 5:
+    if term_state == 5:
         print("Goal was rejected!\n")
         return
-    if status == 6:
+    if term_state == 6:
         print("Goal received a cancel request before it started executing and not yet completed execution!\n")
         return
-    if status == 7:
+    if term_state == 7:
         print("The goal received a cancel request before it started executing, but the action server has not yet confirmed that the goal is canceled.\n")
         return
-    if status == 8:
+    if term_state == 8:
         print("The goal received a cancel request before it started executing and was successfully canceled.\n")
         return
-    if status == 9:
+    if term_state == 9:
         print("Goal is LOST!!\n")
         return    
     
@@ -128,13 +141,12 @@ def goalsetto_action_client(des_pos_x, des_pos_y):
     """
     client.send_goal(goal,goal_status)
 
-def clbk_odom(msg):
-    # The callback function will get the present position of the robot in the environment.
-    global position_  
+def my_callback(event):
+    print ("Time exceeded" + str(event.current_real))
+    print("Failed to reach target in 60 seconds\n")
+    rospy.set_param('active',0)
     
-    #position
-    position_ = msg.pose.pose.position
-    
+
 def main():
 
     """
@@ -149,29 +161,22 @@ def main():
        ii. set the field goal.target_pose.pose.orientation.w to 1
     """
     
-    flag = False
+    flag = 0
         
     global goal
     global flag_goal
     global desired_position_x, desired_position_y
     global active_
+    global client
     
-    """
-    One thing I can do here is to constantly keep updating my variables that include the
-    desired x and y coordinates along with the active_. The active_ is a parameter that takes
-    either a 0 or 1 to ensure if a mode is inactive or active respectively. So basically works
-    with a blocking and unblocking feature.
-    """
-    active_ = rospy.get_param('active')
-    # Making sure that the target position of the x, y coordinates are communicated.
-    desired_position_x = rospy.get_param('des_pos_x')
-    desired_position_y = rospy.get_param('des_pos_y')
+    
+    client = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
     
     rospy.init_node('behaviour_1')
+    print(msg)
     
     sub_odom = rospy.Subscriber('/odom', Odometry, clbk_odom)
     
-    client = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
     client.wait_for_server()
     
     goal.target_pose.header.frame_id = "map"
@@ -181,23 +186,38 @@ def main():
     while(1):
         
         """
+        One thing I can do here is to constantly keep updating my variables that include the
+        desired x and y coordinates along with the active_. The active_ is a parameter that
+        takes either a 0 or 1 to ensure if a mode is inactive or active respectively. So
+        basically works with a blocking and unblocking feature.
+        """
+        active_ = rospy.get_param("/active")
+        # Making sure that the target position of the x, y coordinates are communicated.
+        desired_position_x = rospy.get_param('des_pos_x')
+        desired_position_y = rospy.get_param('des_pos_y')
+        """
         active_ = 1 will make the mode active whereas if it is 0 the mode will be inactive
         """
         if active_ == 1:
-            if flag == True:
-                goalsetto_action_client()
-                flag = False
+            if flag == 1:
+                print("Moving towards desired goal\n")
+                goalsetto_action_client(desired_position_x,desired_position_y)
+                rospy.Timer(rospy.Duration(60), my_callback)
+                flag = 0
+                
                 
         elif active_ == 0:
-            if flag == False and flag_goal == False:
+            if flag == 0 and flag_goal == False:
+                print("Idle state!\n")
                 client.cancel_goal()
-                flag = True
-            if flag_goal = True:
+                flag = 1
+            if flag_goal == True:
+                print("Back to Idle Mode\n")
                 flag = 1
                 flag_goal = False
     
     
 
-if__name__ == '__main__':
+if __name__ == "__main__":
     main()
     

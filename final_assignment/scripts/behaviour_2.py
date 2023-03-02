@@ -43,8 +43,6 @@ tty.setcbreak(fd, when=termio.TCSAFLUSH)
 import tty
 
 
-TwistMsg = Twist
-
 msg = """
 Reading from the keyboard  and Publishing to Twist!
 ---------------------------
@@ -72,6 +70,7 @@ moveBindings = {
         'j':(0,0,0,1),
         'l':(0,0,0,-1),
         'u':(1,0,0,1),
+        'k':(-1,0,0,0),
         ',':(-1,0,0,0),
         '.':(-1,0,0,1),
         'm':(-1,0,0,-1),
@@ -99,7 +98,7 @@ speedBindings={
 class PublishThread(threading.Thread):
     def __init__(self, rate):
         super(PublishThread, self).__init__()
-        self.publisher = rospy.Publisher('cmd_vel', TwistMsg, queue_size = 1)
+        self.publisher = rospy.Publisher('cmd_vel', Twist, queue_size = 1)
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
@@ -207,7 +206,6 @@ def saveTerminalSettings():
 def vels(speed, turn):
     return "currently:\tspeed %s\tturn %s " % (speed,turn)
 
-
 if __name__=="__main__":
 
     flag = 1
@@ -282,5 +280,6 @@ if __name__=="__main__":
             if flag == 1:
                 pub_thread.stop_robot_fnc()
                 flag = 0
+        r.sleep()
                 
             
