@@ -191,7 +191,7 @@ class PublishThread(threading.Thread):
         self.publisher.publish(twist)
 
 
-def getKey(settings, timeout):
+def getKey(timeout):
     tty.setraw(sys.stdin.fileno())
     rlist, _, _ = select([sys.stdin], [], [], timeout)
     if rlist:
@@ -206,8 +206,7 @@ def saveTerminalSettings():
 
 def vels(speed, turn):
     return "currently:\tspeed %s\tturn %s " % (speed,turn)
-    
-def main():
+
 
 if __name__=="__main__":
 
@@ -243,47 +242,45 @@ if __name__=="__main__":
     print(msg)
     print(vels(speed,turn))
     
-    while(1):
-        
-        while not rospy.is_shutdown():
+    while not rospy.is_shutdown():
             
-            active_ = rospy.get_param("/active")
+        active_ = rospy.get_param("/active")
             
-            if active_ == 2:
-                if flag == 0:
-                    print("Behaviour 2 ready to use\n")
-                    flag = 1
+        if active_ == 2:
+            if flag == 0:
+                print("Behaviour 2 ready to use\n")
+                flag = 1
                 
-                key = getKey(key_timeout)
-                if key in moveBindings.keys():
-                    x = moveBindings[key][0]
-                    y = moveBindings[key][1]
-                    z = moveBindings[key][2]
-                    th = moveBindings[key][3]
-                elif key in speedBindings.keys():
-                    speed = min(speed_limit, speed * speedBindings[key][0])
-                    turn = min(turn_limit, turn * speedBindings[key][1])
+            key = getKey(key_timeout)
+            if key in moveBindings.keys():
+                x = moveBindings[key][0]
+                y = moveBindings[key][1]
+                z = moveBindings[key][2]
+                th = moveBindings[key][3]
+            elif key in speedBindings.keys():
+                speed = (speed * speedBindings[key][0])
+                turn = (turn * speedBindings[key][1])
       
-                    if (status == 14):
-                        print(msg)
-                    status = (status + 1) % 15
-                else:
-                    # Skip updating cmd_vel if key timeout and robot already
-                    # stopped.
-                    if key == '' and x == 0 and y == 0 and z == 0 and th == 0:
-                        continue
-                    x = 0
-                    y = 0
-                    z = 0
-                    th = 0
-                    if (key == '\x03'):
-                        break
-
-                pub_thread.update(x, y, z, th, speed, turn)
+                if (status == 14):
+                    print(msg)
+                status = (status + 1) % 15
             else:
-                # For Idle State
-                if flag == 1:
-                    pub_thread.stop_robot_fnc()
-                    flag = 0
+                # Skip updating cmd_vel if key timeout and robot already
+                # stopped.
+                if key == '' and x == 0 and y == 0 and z == 0 and th == 0:
+                    continue
+                x = 0
+                y = 0
+                z = 0
+                th = 0
+                if (key == '\x03'):
+                    break
+
+            pub_thread.update(x, y, z, th, speed, turn)
+        else:
+            # For Idle State
+            if flag == 1:
+                pub_thread.stop_robot_fnc()
+                flag = 0
                 
             
