@@ -125,7 +125,9 @@ Both these nodes make use of the fact the robot is controlled using the keyboard
 sudo apt-get install ros-noetic-teleop-twist-keyboard
 ```
 Teleop-twist-keyboard is a generic Keyboard Teleop for ROS. For Node 3 it is used when the value of active is changed based on teh user input. This behaviour is completely manual and would allow the user to navigate across the map based on the controls given as instructions when the terminal loads.
+
 ![teleop_twist_keyboard](Images/teleop-twist-keyboard.png)
+
 There is hardly any difference between Node 3 and 4 except for the fact that node 4 uses a callback function where information about obstacles are constantly sent to the robot making sure that when it is within certain distance from the obstacle it stops. Also to make it more interesting, pop function was used. Ideally if not mentioned in the pop function, the last element of the dictionary gets eliminated. But here using the pop function, I have ensured that based on the location of the obstacle relative to the robot, certain commands get disabled just so that the user cannot drive into the obstacle. 
 
 ## Simulation
@@ -155,3 +157,140 @@ It will show the following graphs:
 
 **Nodes and Topics**
 ![rqt_graph_nodes_and_topics](Images/nodes&topics.png)
+
+## PseudaCode
+### user_interface
+```python
+import all necessary libraries
+
+Initialize a flag to the node which when True will cancel the operation.
+
+Create a function called MODE()
+
+    if flag is true:
+        It will display a command to show how to cancel an operation.
+    
+    Take input from the user
+
+    For autonomous driving
+    if input == 1:
+        set the parameter active to 0 indicating idle behaviour
+        get parameter active
+   
+        Take Input from the user for desired positions
+        Values are in float
+        set the desired x and y parameters and also the active parameter to 1
+        flag = true
+   
+    elif input == 2:
+        set active parameter to 2
+        print command you want the user to see in the terminal that opens up
+        get active parameter value
+   
+    elif input == 3:
+        DO THE SAME AS DONE WHEN INPUT WAS 2. But in this case set the active parameter to 3.
+
+    elif input == 0:
+        DO THE SAME AS DONE WHEN INPUT WAS 2. But in this case set the active parameter to 0.
+
+    else:
+        print that the user has inputted wrongly.
+   
+Define main function
+    Print user information and execute the MODE function
+    
+if __name__ == '__main__'
+    Execute the main function
+```
+
+### behaviour_1
+```python
+
+Import necessary files including MoveBase related and tf and Odometry
+
+Write the message you want to display. Print it in the main function
+
+Initialize variable for MoveBaseGoal, desired x and y positions and flag for end goal. 
+Also initialize active_ to 0
+
+Define an odometry function that gets the present position of the robot in the environment.
+State position variable
+
+Give a definition to position variable
+
+Define a function to find the goal status.
+    There are 10 statuses with respect to the goal
+    Put them in an if condition
+    if status == 3
+       Print that the goal has been achieved successfully
+       Change value of flag for end goal to true
+
+Define a function for setting goal to action client
+    Get global variables goal and client
+    goal is defined as MoveBaseGoal(). Use that for desired x and y coordinates
+    Send the goal and goal status to the acion server
+
+Define the main function
+    set flag value and define global variables.
+    
+    The action client and server communicate over a set of topics, described in the actionlib protocol. 
+    
+    Initialize the node and print the message
+    
+    Subsribe to the Odometry to get position details
+    
+    Command to Wait until connected to the server. 
+    
+    Set frame_id to map and orientation to 1.0
+    
+    When the loop runs:
+        get the active parameters and the desired x and y coordinates.
+        
+        if action == 1 and flag == 1:
+            invoke the goalsetto_action_client function and then set the flag to 0
+        elif action == 0:
+            if flag is 0 and the flag_goal is False:
+                Cancel the goal
+            if flag_goal is True:
+                set flag to 1 and then flag_goal to False
+                
+if __name__ == '__main__':
+    Invoke main function
+```
+
+### behaviour 2
+```python
+   Take the code from teleop_twist_keyboard.py. Make the following changes to to it:
+   1. Anything with respect to windows os has been taken away and only those with respect to 
+      termios has been left. Termios module provides an interface to the Unix terminal control 
+      facilities. It can be used to control most ascpects of the terminal communication ports. 
+   2. Include a function inside the PublishingThread class that will stop the robot as well. I
+      shall call it stop_robot_fnc() with a self arguement.
+      Define stop_robot_fnc(self):
+          # Copy paste the end part of the run function as it publishes to stop message when thread exits.
+      
+   3. Removed the part of code that involves stamped from the def run(self)
+   4. Removed RestoreTerminalSettings()
+   
+   if __name__ == '__main__':
+       Same as the teleop_twist_keyboard.py except we get the parameter value for active and put an if condition there to activate the keyboard.
+       Activation of the keyboard is written in the py that was used to build this behaviour.
+```
+### behaviour 3
+``` python
+   Same as behaviour 2 except we define 2 new functions
+   1. Laser_clbk(msg):
+       define the range vectors for the front, left and right of the sensor.
+       Use if conditions to set values for either of the 3 sides as false if the robot is too close to the obstacle.
+   2. pop_fnc(MoveBindings):
+       Function that uses if condition to disable an key if obstacle is infront, on the left or the right of it.
+       example:
+       When the obstacle is only in front of the robot
+       if not front and left and right:
+           elem_removed = MoveBindings.pop(i)
+           This wont allow the robot to move forward.
+       There are 7 conditions in total that have the exact format as the above one.
+   The main function is the exact same as that of behaviour 2 except here after the node is initialized, we will have to subscribe to the Laser_clbk
+   function.
+   Also we need to create a dictionary which will be a copy of the moveBindings given at the beginning of the teleop py file.
+```
